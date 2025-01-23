@@ -1,0 +1,25 @@
+laser_trajetory_points:
+  ros__parameters:
+    rate:
+      state_machine: 0.5 #frequencia do publisher de posicao
+
+    waypoints:
+      qty_points: 5
+      points:
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+        ]
