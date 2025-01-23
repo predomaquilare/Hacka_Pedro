@@ -80,16 +80,6 @@ namespace laser_trajectory_points
     {
         land_ = create_client<std_srvs::srv::Trigger>("/uav1/land");
         take_off_ = create_client<std_srvs::srv::Trigger>("/uav/takeoff");
-
-        while (!land_->wait_for_service(std::chrono::seconds(1)))
-        {
-            RCLCPP_INFO(this->get_logger(), "Aguardando pelo serviço 'land'...");
-        }
-
-        while (!take_off_->wait_for_service(std::chrono::seconds(1)))
-        {
-            RCLCPP_INFO(this->get_logger(), "Aguardando pelo serviço 'take_off_'...");
-        }
     }
 
     void laser_trajectory_points_node::goto_callback()
@@ -150,16 +140,32 @@ namespace laser_trajectory_points
         }
     }
 
-    void laser_trajectory_points_node::land_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    void laser_trajectory_points_node::land_callback(
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
         if (!is_active)
             return;
+
+        // Processa o comando de aterrissagem (no seu caso, apenas retornando sucesso)
+        response->success = true;
+        response->message = "Aterrissagem concluída com sucesso";
+
+        RCLCPP_INFO(get_logger(), "Comando de aterrissagem processado");
     }
 
-    void laser_trajectory_points_node::take_off_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    void laser_trajectory_points_node::take_off_callback(
+        const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
         if (!is_active)
             return;
+
+        // Processa o comando de decolagem (no seu caso, apenas retornando sucesso)
+        response->success = true;
+        response->message = "Decolagem iniciada com sucesso";
+
+        RCLCPP_INFO(get_logger(), "Comando de decolagem processado");
     }
 
     void laser_trajectory_points_node::start_state_machine_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
