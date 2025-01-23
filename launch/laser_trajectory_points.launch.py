@@ -18,7 +18,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'parameters_file',
-            default_value=PathJoinSubstitution([FindPackageShare('laser_trajetory_points'),
+            default_value=PathJoinSubstitution([FindPackageShare('laser_trajectory_points'),
                                                 'params', 'waypoint.yaml']),
             description=''
         )
@@ -27,9 +27,9 @@ def generate_launch_description():
     parameters_file = LaunchConfiguration('parameters_file')
 
     calculator_lifecycle_node = LifecycleNode(
-    package='laser_trajetory_points', 
-    executable='laser_trajetory_points',
-    name='laser_trajetory_points',
+    package='laser_trajectory_points', 
+    executable='laser_trajectory_points',
+    name='laser_trajectory_points',
     namespace='',
     output='screen',
     parameters=[parameters_file],

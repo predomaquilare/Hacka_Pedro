@@ -1,19 +1,19 @@
 cmake_minimum_required(VERSION 3.8)
-project(laser_trajetory_points)
+project(laser_trajectory_points)  
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
-# find dependencies
-find_package(ament_cmake        REQUIRED)
-find_package(geometry_msgs      REQUIRED)
-find_package(std_msgs           REQUIRED)
-find_package(std_srvs           REQUIRED)
-find_package(rclcpp             REQUIRED)
-find_package(rclcpp_lifecycle   REQUIRED)
-find_package(rclcpp_components  REQUIRED)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 set(dependencies
   rclcpp
@@ -22,6 +22,10 @@ set(dependencies
   std_msgs
   std_srvs
   geometry_msgs
+)
+
+include_directories(
+  include
 )
 
 set(executable_name laser_trajectory_points)

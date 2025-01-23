@@ -1,5 +1,3 @@
-#pragma once
-
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include "geometry_msgs/msg/pose.hpp"
@@ -30,11 +28,15 @@ namespace laser_trajectory_points
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr start_state_machine;
     rclcpp::TimerBase::SharedPtr timer_;
 
+    geometry_msgs::msg::Pose goto_coordinates;
+
     std::mutex mtx_;
 
-    void goto_callback();
     void have_goal_callback(const std_msgs::msg::Bool::SharedPtr number);
-    void start_state_machine_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void start_state_machine_callback(std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void land_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void take_off_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+    void goto_callback();
 
     bool is_active;
     void getParameters();
@@ -43,9 +45,14 @@ namespace laser_trajectory_points
     void configService();
     void configClients();
 
-    std::vector<_Float64> _trajectory_points_;
-    int _points_;
+    float _points_;
+    std::vector<double> _trajectory_points_;
     float _rate_;
+    bool have_goal;
+    bool start = false;
+    bool land_command = false;
+    bool take_off_command = false;
+    int i = 0;
   };
 
 } // namespace laser_trajectory_points
