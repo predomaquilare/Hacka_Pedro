@@ -84,10 +84,10 @@ namespace laser_trajectory_points
 
     void laser_trajectory_points_node::goto_callback()
     {
-        if (!is_active)
+        if (!is_active || !start)
             return;
 
-        if (start && !take_off_command)
+        if (!take_off_command)
         {
             auto request_takeoff = std::make_shared<std_srvs::srv::Trigger::Request>();
             auto callback_takeoff = [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) -> void
@@ -170,8 +170,7 @@ namespace laser_trajectory_points
 
     void laser_trajectory_points_node::start_state_machine_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
-        if (!is_active)
-            return;
+
         start = true;
     }
 
