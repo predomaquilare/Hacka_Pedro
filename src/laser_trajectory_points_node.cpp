@@ -8,9 +8,9 @@ namespace laser_trajectory_points
         declare_parameter("waypoints.qty_points", rclcpp::ParameterValue(5.0));
         declare_parameter("waypoints.points", rclcpp::ParameterValue(std::vector<double>{0.0, 0.0, 0.0}));
     }
-    laser_trajectory_points_node::~laser_trajectory_points_node() {
 
-    };
+    laser_trajectory_points_node::~laser_trajectory_points_node() {}
+
     CallbackReturn laser_trajectory_points_node::on_configure([[maybe_unused]] const rclcpp_lifecycle::State &)
     {
         RCLCPP_INFO(get_logger(), "configurating");
@@ -19,9 +19,9 @@ namespace laser_trajectory_points
         configTimers();
         configService();
         configClients();
-
         return CallbackReturn::SUCCESS;
     }
+
     CallbackReturn laser_trajectory_points_node::on_activate([[maybe_unused]] const rclcpp_lifecycle::State &)
     {
         is_active = true;
@@ -29,6 +29,7 @@ namespace laser_trajectory_points
         goto_->on_activate();
         return CallbackReturn::SUCCESS;
     }
+
     CallbackReturn laser_trajectory_points_node::on_deactivate([[maybe_unused]] const rclcpp_lifecycle::State &)
     {
         is_active = false;
@@ -36,6 +37,7 @@ namespace laser_trajectory_points
         goto_->on_deactivate();
         return CallbackReturn::SUCCESS;
     }
+
     CallbackReturn laser_trajectory_points_node::on_cleanup([[maybe_unused]] const rclcpp_lifecycle::State &)
     {
         RCLCPP_INFO(get_logger(), "reset");
@@ -43,11 +45,13 @@ namespace laser_trajectory_points
         timer_.reset();
         return CallbackReturn::SUCCESS;
     }
+
     CallbackReturn laser_trajectory_points_node::on_shutdown([[maybe_unused]] const rclcpp_lifecycle::State &)
     {
         RCLCPP_INFO(get_logger(), "shutdown");
         return CallbackReturn::SUCCESS;
     }
+
     void laser_trajectory_points_node::getParameters()
     {
         RCLCPP_INFO(get_logger(), "configurando node");
@@ -55,75 +59,107 @@ namespace laser_trajectory_points
         this->get_parameter("waypoints.qty_points", _points_);
         this->get_parameter("waypoints.points", _trajectory_points_);
     }
+
     void laser_trajectory_points_node::configPubSub()
     {
         have_goal_ = create_subscription<std_msgs::msg::Bool>("/uav1/have_goal", 10, std::bind(&laser_trajectory_points_node::have_goal_callback, this, std::placeholders::_1));
         goto_ = create_publisher<geometry_msgs::msg::Pose>("/uav1/goto", 10);
     }
+
     void laser_trajectory_points_node::configTimers()
     {
         timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / _rate_), std::bind(&laser_trajectory_points_node::goto_callback, this));
     }
+
     void laser_trajectory_points_node::configService()
     {
         start_state_machine = create_service<std_srvs::srv::Trigger>("start_state_machine", std::bind(&laser_trajectory_points_node::start_state_machine_callback, this, std::placeholders::_1, std::placeholders::_2));
     }
+
     void laser_trajectory_points_node::configClients()
     {
         land_ = create_client<std_srvs::srv::Trigger>("/uav1/land");
         take_off_ = create_client<std_srvs::srv::Trigger>("/uav/takeoff");
+
+        while (!land_->wait_for_service(std::chrono::seconds(1)))
+        {
+            RCLCPP_INFO(this->get_logger(), "Aguardando pelo serviço 'land'...");
+        }
+
+        while (!take_off_->wait_for_service(std::chrono::seconds(1)))
+        {
+            RCLCPP_INFO(this->get_logger(), "Aguardando pelo serviço 'take_off_'...");
+        }
     }
 
     void laser_trajectory_points_node::goto_callback()
     {
-        // std::lock_guard<std::mutex> lock(mtx_);
-
         if (!is_active)
-            take_off_command = true;
-        return;
-        if (!start)
             return;
+
+        if (start && !take_off_command)
+        {
+            auto request_takeoff = std::make_shared<std_srvs::srv::Trigger::Request>();
+            auto callback_takeoff = [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) -> void
+            {
+                if (future.get()->success)
+                {
+                    RCLCPP_INFO(get_logger(), "Comando de decolagem recebido: %s", future.get()->message.c_str());
+                }
+                else
+                {
+                    RCLCPP_WARN(get_logger(), "Falha no comando de decolagem: %s", future.get()->message.c_str());
+                }
+            };
+            take_off_->async_send_request(request_takeoff, callback_takeoff);
+            take_off_command = true;
+        }
+
+        if (land_command)
+        {
+            auto request_land = std::make_shared<std_srvs::srv::Trigger::Request>();
+            auto callback_land = [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) -> void
+            {
+                if (future.get()->success)
+                {
+                    RCLCPP_INFO(get_logger(), "Comando de aterrissagem recebido: %s", future.get()->message.c_str());
+                }
+                else
+                {
+                    RCLCPP_WARN(get_logger(), "Falha no comando de aterrissagem: %s", future.get()->message.c_str());
+                }
+            };
+            land_->async_send_request(request_land, callback_land);
+            land_command = false;
+        }
 
         if (!have_goal)
         {
-            goto_coordinates.position.x = _trajectory_points_[i * 3.0];
-            goto_coordinates.position.y = _trajectory_points_[i * 3.0 + 1.0];
-            goto_coordinates.position.z = _trajectory_points_[i * 3.0 + 2.0];
-            goto_->publish(goto_coordinates);
-            i++;
+            if (i < _points_)
+            {
+                goto_coordinates.position.x = _trajectory_points_[i * 3];
+                goto_coordinates.position.y = _trajectory_points_[i * 3 + 1];
+                goto_coordinates.position.z = _trajectory_points_[i * 3 + 2];
+                goto_->publish(goto_coordinates);
+                i++;
+            }
+            else
+            {
+                land_command = true;
+            }
         }
-        if (i > _points_)
-            land_command = true;
     }
 
     void laser_trajectory_points_node::land_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
         if (!is_active)
             return;
-        if (!land_->service_is_ready())
-        {
-            return;
-        }
-        if (land_command)
-        {
-            auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
-            auto result = land_->async_send_request(req);
-        }
     }
 
     void laser_trajectory_points_node::take_off_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
         if (!is_active)
             return;
-        if (!take_off_->service_is_ready())
-        {
-            return;
-        }
-        if (take_off_command)
-        {
-            auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
-            auto result = take_off_->async_send_request(req);
-        }
     }
 
     void laser_trajectory_points_node::start_state_machine_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response)
@@ -139,7 +175,6 @@ namespace laser_trajectory_points
             return;
         have_goal = number->data;
     }
-
 } // namespace laser_trajectory_points
 
 #include <rclcpp_components/register_node_macro.hpp>
