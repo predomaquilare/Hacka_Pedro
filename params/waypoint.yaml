@@ -1,7 +1,7 @@
 laser_trajectory_points:
   ros__parameters:
     rate:
-      state_machine: 5.5 #frequencia do publisher de posicao
+      state_machine: 0.5 #frequencia do publisher de posicao
 
     waypoints:
       qty_points: 3.0
